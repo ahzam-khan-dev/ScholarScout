@@ -221,6 +221,43 @@ npm run build
 
 ---
 
+## Deployment to Railway (SQLite + Persistent Volume)
+
+ScholarScout is designed to run on Railway with local SQLite persisted on a mounted disk volume. This avoids external database costs and complex migrations while keeping data completely persistent.
+
+### 1. Create a New Project on Railway
+1. Log in to [Railway](https://railway.app/).
+2. Click **New Project** &rarr; **Deploy from GitHub repo**.
+3. Select your repository: `https://github.com/ahzamkhan2005-cmd/ScholarScout`.
+
+### 2. Attach a Persistent Volume
+1. In your Railway service canvas, click on your service.
+2. Go to **Settings** &rarr; **Volumes** (or right-click the service and select **Add Volume**).
+3. Set the **Mount Path** to:
+   ```text
+   /data
+   ```
+
+### 3. Set Environment Variables
+In the service's **Variables** tab, add:
+
+| Variable | Value | Description |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `file:/data/scholarscout.db` | Points SQLite to the persistent volume mount |
+| `TINYFISH_API_KEY` | *(your real TinyFish key)* | Secret key for live scholarship crawling |
+| `DEMO_MODE` | `false` | Set to `false` for live searches (or `true` for offline demo) |
+
+> **Security Note:** Never commit your real `TINYFISH_API_KEY` to GitHub. Always set it exclusively in the Railway dashboard.
+
+### 4. Build and Startup Commands
+Railway auto-detects the commands from `package.json`:
+- **Build Command:** `npm run build` (runs `prisma generate && next build --webpack`)
+- **Start Command:** `npm run start` (runs `prisma db push --skip-generate && next start`)
+
+On each container startup, `prisma db push --skip-generate` safely creates or updates the database schema on `/data/scholarscout.db` before Next.js begins serving traffic.
+
+---
+
 ## Troubleshooting
 
 - **401 Unauthorized (`MISSING_API_KEY`):**

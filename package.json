@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
-    "start": "next start",
+    "build": "prisma generate && next build --webpack",
+    "start": "prisma db push --skip-generate && next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:live": "tsx scripts/test-live-tinyfish.ts",
