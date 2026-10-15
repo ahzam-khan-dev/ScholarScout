@@ -1,0 +1,114 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model StudentProfile {
+  id                 String               @id @default(cuid())
+  name               String?
+  country            String
+  region             String?
+  educationLevel     String
+  degree             String?
+  fieldOfStudy       String
+  yearOfStudy        Int?
+  institution        String?
+  academicScore      Float?
+  gradingScale       String?
+  annualFamilyIncome Float?
+  incomeCurrency     String?
+  residencyStatus    String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  savedScholarships  SavedScholarship[]
+  checklists         DocumentChecklistItem[]
+  discoveryRuns      DiscoveryRun[]
+}
+
+model Scholarship {
+  id                     String                  @id @default(cuid())
+  name                   String
+  provider               String?
+  description            String?
+  sourceUrl              String                  @unique
+  applicationUrl         String?
+  awardAmount            Float?
+  awardCurrency          String?
+  awardFrequency         String?
+  deadline               DateTime?
+  deadlineRaw            String?
+  eligibleCountries      String                  @default("[]") // JSON string array
+  eligibleEducationLevels String                 @default("[]") // JSON string array
+  eligibleFields         String                  @default("[]") // JSON string array
+  minimumScore           Float?
+  gradingScale           String?
+  incomeLimit            Float?
+  additionalRequirements String?                 // JSON string array or text
+  requiredDocuments      String?                 // JSON string array
+  sourceExcerpt          String?
+  verificationStatus     String                  @default("verified") // verified, partial, unverified, expired
+  isDemo                 Boolean                 @default(false)
+  lastVerifiedAt         DateTime                @default(now())
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  savedBy                SavedScholarship[]
+  checklists             DocumentChecklistItem[]
+
+  @@index([deadline])
+  @@index([createdAt])
+  @@index([verificationStatus])
+}
+
+model SavedScholarship {
+  id            String         @id @default(cuid())
+  profileId     String
+  scholarshipId String
+  savedAt       DateTime       @default(now())
+
+  profile       StudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  scholarship   Scholarship    @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, scholarshipId])
+  @@index([profileId])
+  @@index([scholarshipId])
+}
+
+model DocumentChecklistItem {
+  id            String         @id @default(cuid())
+  profileId     String
+  scholarshipId String
+  documentName  String
+  isComplete    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  profile       StudentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  scholarship   Scholarship    @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, scholarshipId, documentName])
+  @@index([profileId, scholarshipId])
+}
+
+model DiscoveryRun {
+  id              String          @id @default(cuid())
+  profileId       String?
+  status          String          // "running" | "completed" | "partial_success" | "failed"
+  queriesExecuted String          @default("[]") // JSON array of query strings
+  sourcesFound    Int             @default(0)
+  recordsCreated  Int             @default(0)
+  recordsUpdated  Int             @default(0)
+  errorSummary    String?
+  startedAt       DateTime        @default(now())
+  completedAt     DateTime?
+
+  profile         StudentProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  @@index([startedAt])
+  @@index([profileId])
+}
